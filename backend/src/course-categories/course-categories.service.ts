@@ -1,0 +1,195 @@
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { Role } from '@prisma/client';
+
+// Heuristic #1: Visibility of System Status — clear success/error messages
+// Heuristic #5: Error Prevention — validate permissions and data before operations
+
+@Injectable()
+export class CourseCategoriesService {
+  constructor(private prisma: PrismaService) {}
+
+  /**
+   * Create a new course category (Admin only)
+   * Heuristic #5: Error Prevention — validate unique category name
+   */
+  async create(userId: string, userRole: Role, dto: CreateCategoryDto) {
+    if (userRole !== Role.ADMIN) {
+      throw new ForbiddenException('Only Admin can create course categories');
+    }
+
+    // Check if category name already exists
+    const existingCategory = await this.prisma.courseCategory.findUnique({
+      where: { name: dto.name },
+    });
+
+    if (existingCategory) {
+      throw new NotFoundException('Category name already exists');
+    }
+
+    const category = await this.prisma.courseCategory.create({
+      data: {
+        name: dto.name,
+        academicYear: dto.academicYear || dto.name,
+        isActive: dto.isActive ?? true,
+      },
+    });
+
+    return {
+      success: true,
+      data: category,
+      message: 'Course category created successfully',
+    };
+  }
+
+  /**
+   * Get all course categories
+   * Heuristic #7: Flexibility and Efficiency of Use — filter by active status
+   */
+  async findAll(userId: string, userRole: Role, filters?: { isActive?: boolean }) {
+    const where: any = {};
+
+    if (filters?.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+
+    const categories = await this.prisma.courseCategory.findMany({
+      where,
+      include: {
+        _count: {
+          select: {
+            courses: true,
+          },
+        },
+      },
+      orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
+    });
+
+    return {
+      success: true,
+      data: categories,
+      message: 'Course categories retrieved successfully',
+    };
+  }
+
+  /**
+   * Get category by ID
+   */
+  async findOne(id: string) {
+    const category = await this.prisma.courseCategory.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            courses: true,
+          },
+        },
+        courses: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            instructor: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    return {
+      success: true,
+      data: category,
+      message: 'Category retrieved successfully',
+    };
+  }
+
+  /**
+   * Update course category (Admin only)
+   */
+  async update(id: string, userId: string, userRole: Role, dto: UpdateCategoryDto) {
+    if (userRole !== Role.ADMIN) {
+      throw new ForbiddenException('Only Admin can update course categories');
+    }
+
+    const category = await this.prisma.courseCategory.findUnique({
+      where: { id },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    // Check if new name conflicts with existing category
+    if (dto.name && dto.name !== category.name) {
+      const existingCategory = await this.prisma.courseCategory.findUnique({
+        where: { name: dto.name },
+      });
+
+      if (existingCategory) {
+        throw new NotFoundException('Category name already exists');
+      }
+    }
+
+    const updatedCategory = await this.prisma.courseCategory.update({
+      where: { id },
+      data: dto,
+    });
+
+    return {
+      success: true,
+      data: updatedCategory,
+      message: 'Category updated successfully',
+    };
+  }
+
+  /**
+   * Delete course category (Admin only)
+   * Heuristic #5: Error Prevention — prevent deletion if category has courses
+   */
+  async remove(id: string, userId: string, userRole: Role) {
+    if (userRole !== Role.ADMIN) {
+      throw new ForbiddenException('Only Admin can delete course categories');
+    }
+
+    const category = await this.prisma.courseCategory.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            courses: true,
+          },
+        },
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    // Prevent deletion if category has courses
+    if (category._count.courses > 0) {
+      throw new ForbiddenException(
+        'Cannot delete category with existing courses. Please reassign or delete courses first.',
+      );
+    }
+
+    await this.prisma.courseCategory.delete({
+      where: { id },
+    });
+
+    return {
+      success: true,
+      data: null,
+      message: 'Category deleted successfully',
+    };
+  }
+}

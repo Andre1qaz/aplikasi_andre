@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+/*
+ * Design Tokens — E-Course LMS
+ * Primary: Deep Navy (#1a365d) — academic identity
+ * Accent: Warm Coral (#e07a5f) — signature highlight
+ * Heuristic #4: Consistency and Standards
+ */
+
+:root {
+  --background: #f8f9fb;
+  --foreground: #1a202c;
+  --card: #ffffff;
+  --card-foreground: #1a202c;
+  --primary: #1a365d;
+  --primary-foreground: #ffffff;
+  --secondary: #e8edf4;
+  --secondary-foreground: #1a365d;
+  --accent: #e07a5f;
+  --accent-foreground: #ffffff;
+  --muted: #f1f3f5;
+  --muted-foreground: #64748b;
+  --destructive: #c1121f;
+  --destructive-foreground: #ffffff;
+  --success: #2d6a4f;
+  --success-foreground: #ffffff;
+  --warning: #f4a261;
+  --warning-foreground: #1a202c;
+  --info: #457b9d;
+  --info-foreground: #ffffff;
+  --border: #dee2e6;
+  --input: #dee2e6;
+  --ring: #e07a5f;
+  --radius: 0.625rem;
+  --sidebar-width: 16rem;
+  --sidebar-collapsed-width: 4.5rem;
+}
+
+.dark {
+  --background: #0f1419;
+  --foreground: #e8edf4;
+  --card: #1a2332;
+  --card-foreground: #e8edf4;
+  --primary: #3d5a80;
+  --primary-foreground: #ffffff;
+  --secondary: #1e293b;
+  --secondary-foreground: #e8edf4;
+  --accent: #e07a5f;
+  --accent-foreground: #ffffff;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --success: #40916c;
+  --success-foreground: #ffffff;
+  --warning: #f4a261;
+  --warning-foreground: #1a202c;
+  --info: #4895ef;
+  --info-foreground: #ffffff;
+  --border: #2d3748;
+  --input: #2d3748;
+  --ring: #e07a5f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-space-grotesk);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-space-grotesk), system-ui, sans-serif;
+}
+
+/* Skeleton loading — Heuristic #1: Visibility of System Status */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    var(--secondary) 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius);
+}

@@ -1,0 +1,381 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DOSEN
+  MAHASISWA
+}
+
+enum EnrollmentRole {
+  STUDENT
+  ASSISTANT
+}
+
+enum AssignmentSubmissionStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  LATE
+  GRADED
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  ESSAY
+  SHORT_ANSWER
+}
+
+enum ExamAttemptStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+}
+
+enum CalendarEventType {
+  DEADLINE
+  PERSONAL_NOTE
+  ANNOUNCEMENT
+}
+
+enum NotificationType {
+  DEADLINE_REMINDER
+  EXAM_REMINDER
+  GRADE_RELEASED
+  FORUM_REPLY
+  SYSTEM
+}
+
+enum ModuleFileType {
+  PDF
+  VIDEO
+  DOCUMENT
+  SLIDE
+  OTHER
+}
+
+model User {
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  password          String
+  role              Role     @default(MAHASISWA)
+  avatarUrl         String?
+  storageQuotaUsed  BigInt   @default(0)
+  storageQuotaLimit BigInt   @default(52428800) // 50MB default
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  coursesTaught       Course[]              @relation("CourseInstructor")
+  enrollments         Enrollment[]
+  assignmentSubmissions AssignmentSubmission[]
+  examAttempts        ExamAttempt[]
+  calendarEvents      CalendarEvent[]
+  privateFiles        PrivateFile[]
+  forumThreads        ForumThread[]
+  forumReplies        ForumReply[]
+  notifications       Notification[]
+  activityLogs        ActivityLog[]
+
+  @@map("users")
+}
+
+model CourseCategory {
+  id           String   @id @default(cuid())
+  name         String   @unique // e.g. "2025/2026"
+  academicYear String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  courses Course[]
+
+  @@map("course_categories")
+}
+
+model Course {
+  id                 String   @id @default(cuid())
+  name               String
+  code               String   @unique
+  enrollmentCode     String   @unique @default(cuid())
+  description        String?
+  learningObjectives String?
+  thumbnailColor     String   @default("#1a365d")
+  isLinear           Boolean  @default(false) // Heuristic #19: learner control
+  isActive           Boolean  @default(true)
+  instructorId       String
+  categoryId         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  instructor   User            @relation("CourseInstructor", fields: [instructorId], references: [id])
+  category     CourseCategory? @relation(fields: [categoryId], references: [id])
+  enrollments  Enrollment[]
+  modules      Module[]
+  assignments  Assignment[]
+  exams        Exam[]
+  calendarEvents CalendarEvent[]
+  forumThreads ForumThread[]
+
+  @@map("courses")
+}
+
+model Enrollment {
+  id        String         @id @default(cuid())
+  userId    String
+  courseId  String
+  role      EnrollmentRole @default(STUDENT)
+  joinedAt  DateTime       @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model Module {
+  id                 String   @id @default(cuid())
+  courseId           String
+  title              String
+  description        String?
+  learningObjectives String?  // Heuristic #12: clarity of goals
+  order              Int
+  updatedAt          DateTime @updatedAt // Heuristic #23: relevancy
+  createdAt          DateTime @default(now())
+
+  course Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  files  ModuleFile[]
+
+  @@map("modules")
+}
+
+model ModuleFile {
+  id         String         @id @default(cuid())
+  moduleId   String
+  fileName   String
+  fileUrl    String
+  fileType   ModuleFileType @default(OTHER)
+  fileSize   BigInt         @default(0)
+  uploadedAt DateTime       @default(now())
+
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@map("module_files")
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  description String?
+  deadline    DateTime
+  maxScore    Float    @default(100)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course      Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions AssignmentSubmission[]
+
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id           String                     @id @default(cuid())
+  assignmentId String
+  studentId    String
+  fileUrl      String?
+  fileName     String?
+  submittedAt  DateTime?
+  score        Float?
+  feedback     String?                    // Heuristic #16: instructional assessment
+  rubricNotes  String?
+  status       AssignmentSubmissionStatus @default(NOT_SUBMITTED)
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@map("assignment_submissions")
+}
+
+model Exam {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  description String?
+  startTime   DateTime
+  duration    Int      // minutes
+  deadline    DateTime
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course    Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  ExamAttempt[]
+
+  @@map("exams")
+}
+
+model Question {
+  id            String       @id @default(cuid())
+  examId        String
+  type          QuestionType
+  questionText  String
+  attachmentUrl String?
+  points        Float        @default(1)
+  order         Int          @default(0)
+  autoGrade     Boolean      @default(true) // for SHORT_ANSWER
+
+  exam    Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+  options QuestionOption[]
+  answers Answer[]
+
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String  @id @default(cuid())
+  questionId String
+  optionText String
+  isCorrect  Boolean @default(false)
+  order      Int     @default(0)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  Answer[]
+
+  @@map("question_options")
+}
+
+model ExamAttempt {
+  id           String            @id @default(cuid())
+  examId       String
+  studentId    String
+  startedAt    DateTime?
+  submittedAt  DateTime?
+  totalScore   Float?
+  status       ExamAttemptStatus @default(NOT_STARTED)
+  examCheatLog Json              @default("[]") // anti-cheat tab switch log
+
+  exam    Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers Answer[]
+
+  @@unique([examId, studentId])
+  @@map("exam_attempts")
+}
+
+model Answer {
+  id               String  @id @default(cuid())
+  attemptId        String
+  questionId       String
+  answerText       String?
+  selectedOptionId String?
+  score            Float?
+  feedback         String?
+
+  attempt        ExamAttempt     @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption QuestionOption? @relation(fields: [selectedOptionId], references: [id])
+
+  @@unique([attemptId, questionId])
+  @@map("answers")
+}
+
+model CalendarEvent {
+  id          String            @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  type        CalendarEventType
+  userId      String?
+  courseId    String?
+  createdAt   DateTime          @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_events")
+}
+
+model PrivateFile {
+  id         String   @id @default(cuid())
+  userId     String
+  fileName   String
+  fileUrl    String
+  fileSize   BigInt
+  folderPath String   @default("/")
+  mimeType   String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("private_files")
+}
+
+model ForumThread {
+  id        String   @id @default(cuid())
+  courseId  String
+  authorId  String
+  title     String
+  content   String
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course  Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  author  User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  replies ForumReply[]
+
+  @@map("forum_threads")
+}
+
+model ForumReply {
+  id        String   @id @default(cuid())
+  threadId  String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  thread ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("forum_replies")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("activity_logs")
+}

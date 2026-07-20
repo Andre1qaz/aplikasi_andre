@@ -11,6 +11,8 @@ interface DashboardLayoutProps {
     name: string;
     email: string;
     role: string;
+    id?: string;
+    accessToken?: string;
   };
   breadcrumbs?: { label: string; href?: string }[];
 }

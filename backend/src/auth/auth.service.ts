@@ -6,6 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { Role } from '@prisma/client';
 import { LoginDto, RegisterDto, ForgotPasswordDto } from './dto/auth.dto';
 import { ApiResponse } from '../common/interfaces/api-response.interface';
 
@@ -37,7 +38,7 @@ export class AuthService {
         name: dto.name,
         email: dto.email,
         password: hashedPassword,
-        role: dto.role,
+        role: Role.MAHASISWA,
       },
       select: {
         id: true,
@@ -160,6 +161,43 @@ export class AuthService {
           }
         : null,
       message: 'Profil berhasil diambil.',
+    };
+  }
+
+  async listUsers(): Promise<ApiResponse> {
+    const users = await this.prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      success: true,
+      data: users,
+      message: 'Daftar pengguna berhasil diambil.',
+    };
+  }
+
+  async listActivityLogs(): Promise<ApiResponse> {
+    const logs = await this.prisma.activityLog.findMany({
+      include: {
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    return {
+      success: true,
+      data: logs,
+      message: 'Log aktivitas berhasil diambil.',
     };
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -26,7 +26,7 @@ export class CourseCategoriesService {
     });
 
     if (existingCategory) {
-      throw new NotFoundException('Category name already exists');
+      throw new ConflictException('Category name already exists');
     }
 
     const category = await this.prisma.courseCategory.create({
@@ -135,7 +135,7 @@ export class CourseCategoriesService {
       });
 
       if (existingCategory) {
-        throw new NotFoundException('Category name already exists');
+        throw new ConflictException('Category name already exists');
       }
     }
 

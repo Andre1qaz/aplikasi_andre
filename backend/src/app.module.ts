@@ -10,6 +10,11 @@ import { StorageModule } from './storage/storage.module';
 import { ModulesModule } from './modules/modules.module';
 import { CourseCategoriesModule } from './course-categories/course-categories.module';
 import { AssignmentsModule } from './assignments/assignments.module';
+import { ExamsModule } from './exams/exams.module';
+import { CalendarModule } from './calendar/calendar.module';
+import { ForumModule } from './forum/forum.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { PrivateFilesModule } from './private-files/private-files.module';
 
 @Module({
   imports: [
@@ -33,6 +38,11 @@ import { AssignmentsModule } from './assignments/assignments.module';
     ModulesModule,
     CourseCategoriesModule,
     AssignmentsModule,
+    ExamsModule,
+    CalendarModule,
+    ForumModule,
+    NotificationsModule,
+    PrivateFilesModule,
   ],
   providers: [
     {

@@ -3,12 +3,18 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
-import { BookOpen, FileText, Clock, Users, ChevronLeft, Plus, Edit, Trash2, Upload } from "lucide-react";
+import { BookOpen, FileText, Clock, Users, ChevronLeft, Plus, Edit, Trash2, Upload, Table } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CourseCard } from "@/components/courses/course-card";
 import { ModuleFormDialog } from "@/components/modules/module-form-dialog";
 import { FileUploadDialog } from "@/components/modules/file-upload-dialog";
+import { AssignmentFormDialog } from "@/components/assignments/assignment-form-dialog";
+import { AssignmentGradeDialog } from "@/components/assignments/assignment-grade-dialog";
+import { GradebookView } from "@/components/assignments/gradebook-view";
+import { ExamFormDialog } from "@/components/exams/exam-form-dialog";
+import { QuestionFormDialog } from "@/components/exams/question-form-dialog";
 import { toast } from "sonner";
 
 interface Course {
@@ -55,11 +61,16 @@ interface Assignment {
   title: string;
   deadline: string;
   maxScore: number;
+  description: string | null;
+  _count: {
+    submissions: number;
+  };
 }
 
 interface Exam {
   id: string;
   title: string;
+  description: string | null;
   startTime: string;
   duration: number;
   deadline: string;
@@ -79,6 +90,15 @@ export default function CourseDetailPage() {
   const [showModuleDialog, setShowModuleDialog] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
+  const [showAssignmentDialog, setShowAssignmentDialog] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
+  const [showGradeDialog, setShowGradeDialog] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
+  const [showGradebook, setShowGradebook] = useState(false);
+  const [showExamDialog, setShowExamDialog] = useState(false);
+  const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
+  const [showQuestionDialog, setShowQuestionDialog] = useState(false);
+  const [selectedExamForQuestion, setSelectedExamForQuestion] = useState<string | null>(null);
 
   useEffect(() => {
     if (session?.user && params.id) {
@@ -128,6 +148,71 @@ export default function CourseDetailPage() {
   const handleUploadFile = (module: Module) => {
     setSelectedModule(module);
     setShowUploadDialog(true);
+  };
+
+  const handleCreateAssignment = () => {
+    setSelectedAssignment(null);
+    setShowAssignmentDialog(true);
+  };
+
+  const handleEditAssignment = (assignment: Assignment) => {
+    setSelectedAssignment(assignment);
+    setShowAssignmentDialog(true);
+  };
+
+  const handleAssignmentSuccess = () => {
+    fetchCourse();
+  };
+
+  const handleViewSubmissions = async (assignment: Assignment) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/assignments/${assignment.id}/submissions`,
+        {
+          headers: {
+            Authorization: `Bearer ${session?.accessToken}`,
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success && result.data.length > 0) {
+        setSelectedSubmission(result.data[0]);
+        setShowGradeDialog(true);
+      } else {
+        toast.info("Belum ada submission untuk tugas ini");
+      }
+    } catch (error) {
+      toast.error("Gagal memuat submissions");
+    }
+  };
+
+  const handleGradeSuccess = () => {
+    fetchCourse();
+  };
+
+  const handleCreateExam = () => {
+    setSelectedExam(null);
+    setShowExamDialog(true);
+  };
+
+  const handleEditExam = (exam: Exam) => {
+    setSelectedExam(exam);
+    setShowExamDialog(true);
+  };
+
+  const handleExamSuccess = () => {
+    fetchCourse();
+  };
+
+  const handleAddQuestion = (examId: string) => {
+    setSelectedExamForQuestion(examId);
+    setShowQuestionDialog(true);
+  };
+
+  const handleQuestionSuccess = () => {
+    fetchCourse();
   };
 
   if (loading) {
@@ -327,40 +412,176 @@ export default function CourseDetailPage() {
                   <FileText className="h-5 w-5 text-accent" />
                   Tugas
                 </CardTitle>
-                {(isInstructor || isAdmin) && (
-                  <Button size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Buat Tugas
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {(isInstructor || isAdmin) && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => setShowGradebook(true)}>
+                        <Table className="mr-2 h-4 w-4" />
+                        Gradebook
+                      </Button>
+                      <Button size="sm" onClick={handleCreateAssignment}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Buat Tugas
+                      </Button>
+                    </>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {course.assignments.length === 0 ? (
-                  <p className="text-center py-4 text-muted-foreground text-sm">
-                    Belum ada tugas
-                  </p>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>Belum ada tugas</p>
+                    {(isInstructor || isAdmin) && (
+                      <Button size="sm" variant="outline" className="mt-4" onClick={handleCreateAssignment}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Buat Tugas Pertama
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {course.assignments.map((assignment) => (
                       <div
                         key={assignment.id}
-                        className="flex items-center justify-between p-3 rounded-lg border"
+                        className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
                       >
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium text-sm">{assignment.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Deadline: {new Date(assignment.deadline).toLocaleDateString("id-ID", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              Deadline: {new Date(assignment.deadline).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              {assignment._count.submissions} submission
+                            </span>
+                          </div>
                         </div>
-                        <span className="text-xs font-medium text-accent">
-                          {assignment.maxScore} poin
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-accent px-2 py-1 rounded bg-accent/10">
+                            {assignment.maxScore} poin
+                          </span>
+                          {(isInstructor || isAdmin) && (
+                            <div className="flex gap-1">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                onClick={() => handleViewSubmissions(assignment)}
+                                title="Lihat Submission"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                onClick={() => handleEditAssignment(assignment)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Exams */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-accent" />
+                  Ujian
+                </CardTitle>
+                {(isInstructor || isAdmin) && (
+                  <Button size="sm" onClick={handleCreateExam}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Buat Ujian
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                {course.exams.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>Belum ada ujian</p>
+                    {(isInstructor || isAdmin) && (
+                      <Button size="sm" variant="outline" className="mt-4" onClick={handleCreateExam}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Buat Ujian Pertama
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {course.exams.map((exam) => (
+                      <div
+                        key={exam.id}
+                        className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm">{exam.title}</p>
+                            {exam.isPublished ? (
+                              <span className="text-xs bg-success/10 text-success px-2 py-0.5 rounded">
+                                Published
+                              </span>
+                            ) : (
+                              <span className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded">
+                                Draft
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {exam.duration} menit
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(exam.startTime).toLocaleDateString("id-ID")}
+                            </span>
+                          </div>
+                        </div>
+                        {(isInstructor || isAdmin) && (
+                          <div className="flex gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => handleAddQuestion(exam.id)}
+                              title="Tambah Soal"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => handleEditExam(exam)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -444,6 +665,59 @@ export default function CourseDetailPage() {
           onOpenChange={setShowUploadDialog}
           moduleId={selectedModule.id}
           onSuccess={handleModuleSuccess}
+        />
+      )}
+
+      {/* Assignment Form Dialog */}
+      <AssignmentFormDialog
+        open={showAssignmentDialog}
+        onOpenChange={setShowAssignmentDialog}
+        courseId={course.id}
+        assignment={selectedAssignment}
+        onSuccess={handleAssignmentSuccess}
+      />
+
+      {/* Assignment Grade Dialog */}
+      {selectedSubmission && (
+        <AssignmentGradeDialog
+          open={showGradeDialog}
+          onOpenChange={setShowGradeDialog}
+          submission={selectedSubmission}
+          onSuccess={handleGradeSuccess}
+        />
+      )}
+
+      {/* Gradebook Dialog */}
+      {showGradebook && (
+        <Dialog open={showGradebook} onOpenChange={setShowGradebook}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Gradebook</DialogTitle>
+              <DialogDescription>
+                Rekap nilai seluruh mahasiswa di course ini
+              </DialogDescription>
+            </DialogHeader>
+            <GradebookView courseId={course.id} />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Exam Form Dialog */}
+      <ExamFormDialog
+        open={showExamDialog}
+        onOpenChange={setShowExamDialog}
+        courseId={course.id}
+        exam={selectedExam}
+        onSuccess={handleExamSuccess}
+      />
+
+      {/* Question Form Dialog */}
+      {selectedExamForQuestion && (
+        <QuestionFormDialog
+          open={showQuestionDialog}
+          onOpenChange={setShowQuestionDialog}
+          examId={selectedExamForQuestion}
+          onSuccess={handleQuestionSuccess}
         />
       )}
     </div>

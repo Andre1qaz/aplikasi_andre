@@ -77,7 +77,6 @@ async function main() {
     create: {
       name: 'Pemrograman Web',
       code: 'IF101',
-      enrollmentCode: 'WEB2025',
       description: 'Mempelajari dasar-dasar pengembangan aplikasi web modern.',
       learningObjectives:
         '1. Memahami HTML, CSS, JavaScript\n2. Membangun aplikasi full-stack\n3. Menerapkan prinsip UX/UI',
@@ -93,7 +92,6 @@ async function main() {
     create: {
       name: 'Basis Data',
       code: 'IF102',
-      enrollmentCode: 'BD2025',
       description: 'Konsep dan implementasi sistem basis data relasional.',
       learningObjectives:
         '1. Memahami model relasional\n2. Menulis query SQL\n3. Merancang skema database',
@@ -109,7 +107,6 @@ async function main() {
     create: {
       name: 'Algoritma & Struktur Data',
       code: 'IF103',
-      enrollmentCode: 'ALG2024',
       description: 'Fundamental algoritma dan struktur data untuk pemrograman.',
       learningObjectives:
         '1. Menganalisis kompleksitas algoritma\n2. Implementasi struktur data\n3. Menyelesaikan masalah komputasi',
@@ -272,7 +269,7 @@ async function main() {
   console.log(`   Dosen 1:   ${dosen1.email}`);
   console.log(`   Dosen 2:   ${dosen2.email}`);
   console.log(`   Mahasiswa: mahasiswa1@ecourse.ac.id - mahasiswa5@ecourse.ac.id`);
-  console.log(`\n📚 Kode enrollment course:`);
+  console.log(`\n📚 Course enrollment codes (check database for auto-generated codes):`);
   console.log(`   ${course1.name}: ${course1.enrollmentCode}`);
   console.log(`   ${course2.name}: ${course2.enrollmentCode}`);
   console.log(`   ${course3.name}: ${course3.enrollmentCode}`);

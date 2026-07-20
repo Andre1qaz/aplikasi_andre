@@ -3,7 +3,6 @@
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import {
-  Bell,
   ChevronDown,
   LogOut,
   User,
@@ -12,12 +11,15 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getRoleLabel } from "@/lib/utils";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 interface TopNavbarProps {
   user: {
     name: string;
     email: string;
     role: string;
+    id?: string;
+    accessToken?: string;
   };
   onMenuClick?: () => void;
   breadcrumbs?: { label: string; href?: string }[];
@@ -67,12 +69,9 @@ export function TopNavbar({ user, onMenuClick, breadcrumbs }: TopNavbarProps) {
             </Button>
           </Link>
 
-          <Button variant="ghost" size="icon" className="relative" aria-label="Notifikasi">
-            <Bell className="size-5" />
-            <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
-              1
-            </span>
-          </Button>
+          {user.id && user.accessToken && (
+            <NotificationBell token={user.accessToken} userId={user.id} />
+          )}
 
           <div className="relative group">
             <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors">

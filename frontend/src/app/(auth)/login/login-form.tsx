@@ -49,10 +49,16 @@ export default function LoginForm() {
 
       toast.success("Login berhasil! Mengalihkan ke dashboard...");
 
+      const dashboardMap: Record<string, string> = {
+        ADMIN: "/admin/dashboard",
+        DOSEN: "/dosen/dashboard",
+        MAHASISWA: "/mahasiswa/dashboard",
+      };
+
       if (callbackUrl) {
         router.push(callbackUrl);
       } else {
-        router.refresh();
+        router.push("/"); // Will redirect via middleware to appropriate dashboard
       }
     } catch {
       toast.error("Terjadi kesalahan saat login. Silakan coba lagi.");

@@ -1,12 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
-  IsEnum,
   IsNotEmpty,
   IsString,
   MinLength,
 } from 'class-validator';
-import { Role } from '@prisma/client';
 
 export class LoginDto {
   @ApiProperty({ example: 'mahasiswa1@ecourse.ac.id' })
@@ -33,10 +31,6 @@ export class RegisterDto {
   @IsString()
   @MinLength(8, { message: 'Password minimal 8 karakter' })
   password: string;
-
-  @ApiProperty({ enum: Role, example: Role.MAHASISWA })
-  @IsEnum(Role, { message: 'Role tidak valid' })
-  role: Role;
 }
 
 export class ForgotPasswordDto {

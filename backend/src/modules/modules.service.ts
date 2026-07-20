@@ -90,11 +90,15 @@ export class ModulesService {
       throw new NotFoundException('Module not found');
     }
 
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: { courseId: module.courseId, userId },
+    });
+
     // Check access permissions
     const hasAccess =
       userRole === Role.ADMIN ||
       module.course.instructorId === userId ||
-      module.course.enrollments.some((e: any) => e.userId === userId);
+      !!enrollment;
 
     if (!hasAccess) {
       throw new ForbiddenException('You do not have access to this module');
@@ -204,7 +208,7 @@ export class ModulesService {
     }
 
     // Determine file type based on MIME type
-    let fileType = ModuleFileType.OTHER;
+    let fileType: ModuleFileType = ModuleFileType.OTHER;
     if (dto.fileType === 'application/pdf') {
       fileType = ModuleFileType.PDF;
     } else if (dto.fileType.startsWith('video/')) {
@@ -292,11 +296,15 @@ export class ModulesService {
       throw new NotFoundException('Course not found');
     }
 
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: { courseId, userId },
+    });
+
     // Check access permissions
     const hasAccess =
       userRole === Role.ADMIN ||
       course.instructorId === userId ||
-      course.enrollments.some((e: any) => e.userId === userId);
+      !!enrollment;
 
     if (!hasAccess) {
       throw new ForbiddenException('You do not have access to this course');

@@ -1,9 +1,12 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { Role } from '@prisma/client';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 
 @ApiTags('Auth')
@@ -37,5 +40,23 @@ export class AuthController {
   @ApiOperation({ summary: 'Ambil profil user yang sedang login' })
   getProfile(@CurrentUser('sub') userId: string) {
     return this.authService.getProfile(userId);
+  }
+
+  @Get('users')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Daftar semua pengguna (Admin)' })
+  listUsers() {
+    return this.authService.listUsers();
+  }
+
+  @Get('activity-logs')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Daftar log aktivitas (Admin)' })
+  listActivityLogs() {
+    return this.authService.listActivityLogs();
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
@@ -28,7 +28,7 @@ export class CoursesService {
     });
 
     if (existingCourse) {
-      throw new NotFoundException('Course code already exists');
+      throw new ConflictException('Course code already exists');
     }
 
     // Validate category if provided
@@ -74,9 +74,12 @@ export class CoursesService {
       include: {
         category: true,
         instructor: { select: { id: true, name: true, email: true } },
-        modules: { orderBy: { order: 'asc' } },
+        modules: {
+          orderBy: { order: 'asc' },
+          include: { files: true },
+        },
         assignments: { orderBy: { deadline: 'asc' } },
-        exams: { where: { isPublished: true }, orderBy: { startTime: 'asc' } },
+        exams: { orderBy: { startTime: 'asc' } },
         _count: {
           select: {
             enrollments: true,
@@ -92,19 +95,32 @@ export class CoursesService {
       throw new NotFoundException('Course not found');
     }
 
-    // Check access permissions
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId: id } },
+    });
+
     const hasAccess =
       userRole === Role.ADMIN ||
       course.instructorId === userId ||
-      course.enrollments.some((e: any) => e.userId === userId);
+      !!enrollment;
 
     if (!hasAccess) {
       throw new ForbiddenException('You do not have access to this course');
     }
 
+    const canSeeUnpublished =
+      userRole === Role.ADMIN || course.instructorId === userId;
+
+    const data = {
+      ...course,
+      exams: canSeeUnpublished
+        ? course.exams
+        : course.exams.filter((exam) => exam.isPublished),
+    };
+
     return {
       success: true,
-      data: course,
+      data,
       message: 'Course retrieved successfully',
     };
   }
@@ -145,7 +161,7 @@ export class CoursesService {
       });
 
       if (existingCourse) {
-        throw new NotFoundException('Course code already exists');
+        throw new ConflictException('Course code already exists');
       }
     }
 

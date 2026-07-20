@@ -196,11 +196,15 @@ export class AssignmentsService {
       throw new NotFoundException('Course not found');
     }
 
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: { courseId, userId },
+    });
+
     // Check access permissions
     const hasAccess =
       userRole === Role.ADMIN ||
       course.instructorId === userId ||
-      course.enrollments.some((e: any) => e.userId === userId);
+      !!enrollment;
 
     if (!hasAccess) {
       throw new ForbiddenException('You do not have access to this course');
@@ -332,7 +336,6 @@ export class AssignmentsService {
         feedback: dto.feedback,
         rubricNotes: dto.rubricNotes,
         status: dto.score !== undefined ? AssignmentSubmissionStatus.GRADED : AssignmentSubmissionStatus.SUBMITTED,
-        gradedAt: dto.score !== undefined ? new Date() : null,
       },
       include: {
         student: {
@@ -445,7 +448,7 @@ export class AssignmentsService {
       include: {
         enrollments: {
           include: {
-            student: {
+            user: {
               select: {
                 id: true,
                 name: true,
@@ -494,9 +497,9 @@ export class AssignmentsService {
     });
 
     // Build gradebook matrix
-    const gradebook = course.enrollments.map((enrollment: any) => {
+    const gradebook = course.enrollments.map((enrollment) => {
       const studentSubmissions = submissions.filter(
-        (s: any) => s.studentId === enrollment.studentId
+        (s) => s.studentId === enrollment.userId,
       );
 
       const grades = course.assignments.map((assignment: any) => {
@@ -518,7 +521,7 @@ export class AssignmentsService {
       const maxTotalScore = grades.reduce((sum: number, g: any) => sum + g.maxScore, 0);
 
       return {
-        student: enrollment.student,
+        student: enrollment.user,
         grades,
         totalScore,
         maxTotalScore,

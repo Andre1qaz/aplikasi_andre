@@ -150,7 +150,7 @@ Fonts: **Space Grotesk** (headings) + **Inter** (body)
 
 ## Fase Development
 
-### ✅ Fase 1 — Fondasi (Current)
+###  Fase 1 — Fondasi (Current)
 - [x] Docker Compose (PostgreSQL, Redis, MinIO)
 - [x] Prisma schema lengkap (semua entities)
 - [x] NestJS backend dengan auth, RBAC, Swagger
@@ -161,24 +161,24 @@ Fonts: **Space Grotesk** (headings) + **Inter** (body)
 - [x] Seed data demo
 - [x] Error pages (403, 404, 500)
 
-### 🔜 Fase 2 — Course Management
+### Fase 2 — Course Management
 - CRUD course (dosen/admin)
 - Enrollment via kode course
 - Modul pembelajaran dengan upload file
 - Learning objectives display
 
-### 🔜 Fase 3 — Tugas & Penilaian
+### Fase 3 — Tugas & Penilaian
 - Assignment creation & submission
 - File upload via MinIO presigned URL
 - Grading dengan feedback & rubrik
 
-### 🔜 Fase 4 — Ujian
+### Fase 4 — Ujian
 - Exam builder (MC, Essay, Short Answer)
 - Timer countdown & auto-submit
 - Anti-cheat logging
 - Manual & auto grading
 
-### 🔜 Fase 5 — Fitur Pendukung
+### Fase 5 — Fitur Pendukung
 - Kalender & catatan personal
 - Private file storage dengan kuota
 - Forum diskusi per course

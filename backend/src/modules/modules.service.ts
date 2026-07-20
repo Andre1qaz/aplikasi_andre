@@ -53,7 +53,7 @@ export class ModulesService {
         title: dto.title,
         description: dto.description,
         learningObjectives: dto.learningObjectives,
-        order,
+        order: dto.order ?? 0,
       },
       include: {
         files: true,

@@ -496,10 +496,10 @@ export class AssignmentsService {
       },
     });
 
-    // Build gradebook matrix
-    const gradebook = course.enrollments.map((enrollment) => {
+// Build gradebook matrix
+      const gradebook = course.enrollments.map((enrollment: any) => {
       const studentSubmissions = submissions.filter(
-        (s) => s.studentId === enrollment.userId,
+        (s: any) => s.studentId === enrollment.userId,
       );
 
       const grades = course.assignments.map((assignment: any) => {

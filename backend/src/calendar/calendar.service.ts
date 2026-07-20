@@ -32,7 +32,7 @@ export class CalendarService {
         where: { userId },
         select: { courseId: true },
       });
-      const courseIds = enrollments.map((e) => e.courseId);
+      const courseIds = enrollments.map((e: any) => e.courseId);
       where.OR.push({ courseId: { in: courseIds } });
     }
 
@@ -69,7 +69,7 @@ export class CalendarService {
       where: { userId },
       select: { courseId: true },
     });
-    const courseIds = enrollments.map((e) => e.courseId);
+    const courseIds = enrollments.map((e: any) => e.courseId);
 
     const events = await this.prisma.calendarEvent.findMany({
       where: {
@@ -273,7 +273,7 @@ export class CalendarService {
       where: { userId },
       select: { courseId: true },
     });
-    const courseIds = enrollments.map((e) => e.courseId);
+    const courseIds = enrollments.map((e: any) => e.courseId);
 
     const deadlines = await this.prisma.calendarEvent.findMany({
       where: {

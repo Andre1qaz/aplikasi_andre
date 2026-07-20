@@ -25,7 +25,7 @@ Platform pembelajaran online full-stack yang dibangun dengan fokus pada **23 ind
 
 ```bash
 git clone <repo-url>
-cd aplikasi_andre
+cd e-course 2
 
 # Copy environment files
 cp .env.example .env

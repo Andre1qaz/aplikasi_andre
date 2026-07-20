@@ -115,7 +115,7 @@ export class CoursesService {
       ...course,
       exams: canSeeUnpublished
         ? course.exams
-        : course.exams.filter((exam) => exam.isPublished),
+        : course.exams.filter((exam: any) => exam.isPublished),
     };
 
     return {

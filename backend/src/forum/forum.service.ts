@@ -80,19 +80,18 @@ export class ForumService {
     });
 
     // Mark threads with unread replies for the current user
-    const threadsWithUnread = threads.map((thread) => {
+    const threadsWithUnread = threads.map((thread: any) => {
       if (!userId) return { ...thread, unreadCount: 0 };
 
-      const userReplies = thread.replies.filter((r) => r.authorId === userId);
+      const userReplies = thread.replies.filter((r: any) => r.authorId === userId);
       const lastUserReply = userReplies.length > 0 ? userReplies[userReplies.length - 1] : null;
       
       let unreadCount = 0;
       if (lastUserReply) {
-        unreadCount = thread.replies.filter(
-          (r) => new Date(r.createdAt) > new Date(lastUserReply.createdAt) && r.authorId !== userId
+        unreadCount = thread.replies.filter((r: any) => new Date(r.createdAt) > new Date(lastUserReply.createdAt) && r.authorId !== userId
         ).length;
       } else {
-        unreadCount = thread.replies.filter((r) => r.authorId !== userId).length;
+        unreadCount = thread.replies.filter((r: any) => r.authorId !== userId).length;
       }
 
       return { ...thread, unreadCount };

@@ -24,7 +24,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${inter.variable} ${spaceGrotesk.variable} h-full`}>
+    <html
+      lang="id"
+      className={`${inter.variable} ${spaceGrotesk.variable} h-full`}
+      suppressHydrationWarning
+    >
       <body className="min-h-full antialiased">
         <Providers>{children}</Providers>
       </body>

@@ -11,6 +11,11 @@ const roleRoutes: Record<string, string[]> = {
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
+
+  if (pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
   const isLoggedIn = !!req.auth;
   const role = req.auth?.user?.role;
 

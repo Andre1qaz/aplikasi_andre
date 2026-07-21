@@ -149,6 +149,10 @@ export function FileManager({ token, userId }: FileManagerProps) {
   const handleDownload = async (file: PrivateFile) => {
     try {
       const downloadData = await getPrivateFileDownloadUrl(token, file.id);
+      if (!downloadData.data) {
+        toast.error("Gagal mendapatkan URL download");
+        return;
+      }
       const link = document.createElement("a");
       link.href = downloadData.data.downloadUrl;
       link.download = downloadData.data.fileName;

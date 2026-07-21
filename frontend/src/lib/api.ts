@@ -353,3 +353,35 @@ export async function movePrivateFile(token: string, fileId: string, newFolderPa
 export async function getCourses(token: string) {
   return apiFetch<any[]>("/courses/dashboard", {}, token);
 }
+
+// Users API functions (Admin only)
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
+
+export async function getUsers(token: string) {
+  return apiFetch<User[]>("/auth/users", {}, token);
+}
+
+// Activity Logs API functions (Admin only)
+export interface ActivityLog {
+  id: string;
+  userId: string;
+  action: string;
+  entity: string;
+  entityId: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+export async function getActivityLogs(token: string) {
+  return apiFetch<ActivityLog[]>("/auth/activity-logs", {}, token);
+}

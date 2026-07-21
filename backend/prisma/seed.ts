@@ -1,7 +1,16 @@
-import { PrismaClient, Role, QuestionType, ModuleFileType } from '@prisma/client';
+import 'dotenv/config';
+console.log('DATABASE_URL:', process.env.DATABASE_URL);
+import {
+  PrismaClient,
+  Role,
+  QuestionType,
+  ModuleFileType,
+} from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 const SALT_ROUNDS = 12;
 const defaultPassword = 'Password123!';
 
@@ -44,18 +53,23 @@ async function main() {
   });
 
   const students = await Promise.all(
-    ['Budi Santoso', 'Citra Dewi', 'Dedi Pratama', 'Eka Putri', 'Fajar Nugroho'].map(
-      (name, i) =>
-        prisma.user.upsert({
-          where: { email: `mahasiswa${i + 1}@ecourse.ac.id` },
-          update: {},
-          create: {
-            name,
-            email: `mahasiswa${i + 1}@ecourse.ac.id`,
-            password: hashedPassword,
-            role: Role.MAHASISWA,
-          },
-        }),
+    [
+      'Budi Santoso',
+      'Citra Dewi',
+      'Dedi Pratama',
+      'Eka Putri',
+      'Fajar Nugroho',
+    ].map((name, i) =>
+      prisma.user.upsert({
+        where: { email: `mahasiswa${i + 1}@ecourse.ac.id` },
+        update: {},
+        create: {
+          name,
+          email: `mahasiswa${i + 1}@ecourse.ac.id`,
+          password: hashedPassword,
+          role: Role.MAHASISWA,
+        },
+      }),
     ),
   );
 
@@ -133,7 +147,8 @@ async function main() {
       courseId: course1.id,
       title: 'Pengenalan Web Development',
       description: 'Overview teknologi web modern dan setup environment.',
-      learningObjectives: 'Memahami arsitektur client-server dan tools development.',
+      learningObjectives:
+        'Memahami arsitektur client-server dan tools development.',
       order: 1,
     },
   });
@@ -153,7 +168,8 @@ async function main() {
       courseId: course1.id,
       title: 'HTML & CSS Fundamentals',
       description: 'Struktur halaman web dan styling responsif.',
-      learningObjectives: 'Mampu membuat layout responsif dengan HTML5 dan CSS3.',
+      learningObjectives:
+        'Mampu membuat layout responsif dengan HTML5 dan CSS3.',
       order: 2,
     },
   });
@@ -193,29 +209,12 @@ async function main() {
     },
   });
 
-  const q1 = await prisma.question.create({
-    data: {
-      examId: exam1.id,
-      type: QuestionType.MULTIPLE_CHOICE,
-      questionText: 'Apa kepanjangan dari HTML?',
-      points: 10,
-      order: 1,
-      options: {
-        create: [
-          { optionText: 'Hyper Text Markup Language', isCorrect: true, order: 1 },
-          { optionText: 'High Tech Modern Language', isCorrect: false, order: 2 },
-          { optionText: 'Home Tool Markup Language', isCorrect: false, order: 3 },
-          { optionText: 'Hyperlink Text Management Language', isCorrect: false, order: 4 },
-        ],
-      },
-    },
-  });
-
   await prisma.question.create({
     data: {
       examId: exam1.id,
       type: QuestionType.ESSAY,
-      questionText: 'Jelaskan perbedaan antara HTML, CSS, dan JavaScript beserta peran masing-masing.',
+      questionText:
+        'Jelaskan perbedaan antara HTML, CSS, dan JavaScript beserta peran masing-masing.',
       points: 30,
       order: 2,
       autoGrade: false,
@@ -226,7 +225,8 @@ async function main() {
     data: {
       examId: exam1.id,
       type: QuestionType.SHORT_ANSWER,
-      questionText: 'Properti CSS apa yang digunakan untuk membuat layout flexbox?',
+      questionText:
+        'Properti CSS apa yang digunakan untuk membuat layout flexbox?',
       points: 10,
       order: 3,
       autoGrade: true,
@@ -248,7 +248,8 @@ async function main() {
       courseId: course1.id,
       authorId: dosen1.id,
       title: 'Selamat datang di Forum Pemrograman Web',
-      content: 'Gunakan forum ini untuk diskusi materi, tugas, dan pertanyaan terkait course.',
+      content:
+        'Gunakan forum ini untuk diskusi materi, tugas, dan pertanyaan terkait course.',
       isPinned: true,
     },
   });
@@ -268,8 +269,12 @@ async function main() {
   console.log(`   Admin:     ${admin.email}`);
   console.log(`   Dosen 1:   ${dosen1.email}`);
   console.log(`   Dosen 2:   ${dosen2.email}`);
-  console.log(`   Mahasiswa: mahasiswa1@ecourse.ac.id - mahasiswa5@ecourse.ac.id`);
-  console.log(`\n📚 Course enrollment codes (check database for auto-generated codes):`);
+  console.log(
+    `   Mahasiswa: mahasiswa1@ecourse.ac.id - mahasiswa5@ecourse.ac.id`,
+  );
+  console.log(
+    `\n📚 Course enrollment codes (check database for auto-generated codes):`,
+  );
   console.log(`   ${course1.name}: ${course1.enrollmentCode}`);
   console.log(`   ${course2.name}: ${course2.enrollmentCode}`);
   console.log(`   ${course3.name}: ${course3.enrollmentCode}`);

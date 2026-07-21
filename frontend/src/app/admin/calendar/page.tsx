@@ -2,9 +2,9 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { AuthSessionProvider } from "@/components/session-provider";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { CoursesClient } from "./courses-client";
+import { CalendarClient } from "./calendar-client";
 
-export default async function DosenCoursesPage() {
+export default async function AdminCalendarPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -13,11 +13,15 @@ export default async function DosenCoursesPage() {
       <DashboardLayout
         user={session.user}
         breadcrumbs={[
-          { label: "Dashboard", href: "/dosen/dashboard" },
-          { label: "Course Saya" },
+          { label: "Dashboard", href: "/admin/dashboard" },
+          { label: "Kalender" },
         ]}
       >
-        <CoursesClient token={session.accessToken} />
+        <CalendarClient
+          role="ADMIN"
+          token={session.accessToken}
+          userId={session.user.id}
+        />
       </DashboardLayout>
     </AuthSessionProvider>
   );

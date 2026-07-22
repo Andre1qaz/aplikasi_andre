@@ -15,6 +15,8 @@ import { CalendarModule } from './calendar/calendar.module';
 import { ForumModule } from './forum/forum.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PrivateFilesModule } from './private-files/private-files.module';
+import { WeeksModule } from './weeks/weeks.module';
+import { ActivitiesModule } from './activities/activities.module';
 
 @Module({
   imports: [
@@ -43,6 +45,8 @@ import { PrivateFilesModule } from './private-files/private-files.module';
     ForumModule,
     NotificationsModule,
     PrivateFilesModule,
+    WeeksModule,
+    ActivitiesModule,
   ],
   providers: [
     {

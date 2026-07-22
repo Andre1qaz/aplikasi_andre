@@ -59,6 +59,20 @@ enum ModuleFileType {
   OTHER
 }
 
+enum ActivityType {
+  MATERIAL
+  ASSIGNMENT
+  QUIZ
+  FORUM
+  VIDEO
+  EXTERNAL_LINK
+}
+
+enum ActivityStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model User {
   id                String   @id @default(cuid())
   name              String
@@ -120,6 +134,7 @@ model Course {
   exams        Exam[]
   calendarEvents CalendarEvent[]
   forumThreads ForumThread[]
+  weeks        Week[]
 
   @@map("courses")
 }
@@ -136,6 +151,42 @@ model Enrollment {
 
   @@unique([userId, courseId])
   @@map("enrollments")
+}
+
+model Week {
+  id          String   @id @default(cuid())
+  courseId    String
+  weekNumber  Int
+  title       String
+  startDate   DateTime
+  endDate     DateTime
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course     Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  activities Activity[]
+
+  @@unique([courseId, weekNumber])
+  @@map("weeks")
+}
+
+model Activity {
+  id          String         @id @default(cuid())
+  weekId      String
+  type        ActivityType
+  title       String
+  description String?
+  status      ActivityStatus @default(DRAFT)
+  order       Int
+  metadata    Json?          // Stores type-specific data (assignment deadline, quiz settings, etc.)
+  publishedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  week Week @relation(fields: [weekId], references: [id], onDelete: Cascade)
+
+  @@map("activities")
 }
 
 model Module {

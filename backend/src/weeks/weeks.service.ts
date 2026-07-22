@@ -1,0 +1,157 @@
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateWeekDto } from './dto/create-week.dto';
+import { UpdateWeekDto } from './dto/update-week.dto';
+import { Role } from '@prisma/client';
+
+@Injectable()
+export class WeeksService {
+  constructor(private prisma: PrismaService) {}
+
+  async findByCourse(courseId: string, userId: string, userRole: Role) {
+    // Check if user has access to the course
+    await this.checkCourseAccess(courseId, userId, userRole);
+
+    return this.prisma.week.findMany({
+      where: { courseId },
+      orderBy: { order: 'asc' },
+      include: {
+        activities: {
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+  }
+
+  async findOne(id: string, userId: string, userRole: Role) {
+    const week = await this.prisma.week.findUnique({
+      where: { id },
+      include: {
+        activities: {
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    if (!week) {
+      throw new NotFoundException('Week not found');
+    }
+
+    // Check if user has access to the course
+    await this.checkCourseAccess(week.courseId, userId, userRole);
+
+    return week;
+  }
+
+  async create(courseId: string, dto: CreateWeekDto, userId: string, userRole: Role) {
+    // Only ADMIN and DOSEN can create weeks
+    if (userRole !== Role.ADMIN && userRole !== Role.DOSEN) {
+      throw new ForbiddenException('Only Admin and Dosen can create weeks');
+    }
+
+    // Check if user has access to the course
+    await this.checkCourseAccess(courseId, userId, userRole);
+
+    return this.prisma.week.create({
+      data: {
+        courseId,
+        ...dto,
+      },
+      include: {
+        activities: true,
+      },
+    });
+  }
+
+  async update(id: string, dto: UpdateWeekDto, userId: string, userRole: Role) {
+    // Only ADMIN and DOSEN can update weeks
+    if (userRole !== Role.ADMIN && userRole !== Role.DOSEN) {
+      throw new ForbiddenException('Only Admin and Dosen can update weeks');
+    }
+
+    const week = await this.findOne(id, userId, userRole);
+
+    return this.prisma.week.update({
+      where: { id },
+      data: dto,
+      include: {
+        activities: true,
+      },
+    });
+  }
+
+  async remove(id: string, userId: string, userRole: Role) {
+    // Only ADMIN and DOSEN can delete weeks
+    if (userRole !== Role.ADMIN && userRole !== Role.DOSEN) {
+      throw new ForbiddenException('Only Admin and Dosen can delete weeks');
+    }
+
+    const week = await this.findOne(id, userId, userRole);
+
+    return this.prisma.week.delete({
+      where: { id },
+    });
+  }
+
+  async reorder(courseId: string, weekOrders: { id: string; order: number }[], userId: string, userRole: Role) {
+    // Only ADMIN and DOSEN can reorder weeks
+    if (userRole !== Role.ADMIN && userRole !== Role.DOSEN) {
+      throw new ForbiddenException('Only Admin and Dosen can reorder weeks');
+    }
+
+    // Check if user has access to the course
+    await this.checkCourseAccess(courseId, userId, userRole);
+
+    // Update orders in a transaction
+    return this.prisma.$transaction(
+      weekOrders.map(({ id, order }) =>
+        this.prisma.week.update({
+          where: { id },
+          data: { order },
+        }),
+      ),
+    );
+  }
+
+  private async checkCourseAccess(courseId: string, userId: string, userRole: Role) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    // Admin has access to all courses
+    if (userRole === Role.ADMIN) {
+      return;
+    }
+
+    // Dosen can only access their own courses
+    if (userRole === Role.DOSEN) {
+      if (course.instructorId !== userId) {
+        throw new ForbiddenException('You do not have access to this course');
+      }
+      return;
+    }
+
+    // Mahasiswa can only access enrolled courses
+    if (userRole === Role.MAHASISWA) {
+      const enrollment = await this.prisma.enrollment.findUnique({
+        where: {
+          userId_courseId: {
+            userId,
+            courseId,
+          },
+        },
+      });
+
+      if (!enrollment) {
+        throw new ForbiddenException('You are not enrolled in this course');
+      }
+      return;
+    }
+
+    throw new ForbiddenException('You do not have access to this course');
+  }
+}

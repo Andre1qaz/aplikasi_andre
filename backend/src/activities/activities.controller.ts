@@ -1,0 +1,121 @@
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { ActivitiesService } from './activities.service';
+import { CreateActivityDto } from './dto/create-activity.dto';
+import { UpdateActivityDto } from './dto/update-activity.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Role } from '@prisma/client';
+
+@ApiTags('activities')
+@Controller('weeks/:weekId/activities')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
+export class ActivitiesController {
+  constructor(private readonly activitiesService: ActivitiesService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get all activities for a week' })
+  @ApiParam({ name: 'weekId', description: 'Week ID' })
+  findAll(
+    @Param('weekId') weekId: string,
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    return this.activitiesService.findByWeek(weekId, userId, role);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a specific activity' })
+  @ApiParam({ name: 'weekId', description: 'Week ID' })
+  @ApiParam({ name: 'id', description: 'Activity ID' })
+  findOne(
+    @Param('id') id: string,
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    return this.activitiesService.findOne(id, userId, role);
+  }
+
+  @Post()
+  @Roles(Role.ADMIN, Role.DOSEN)
+  @ApiOperation({ summary: 'Create a new activity (Admin/Dosen only)' })
+  @ApiParam({ name: 'weekId', description: 'Week ID' })
+  create(
+    @Param('weekId') weekId: string,
+    @Body() dto: CreateActivityDto,
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    return this.activitiesService.create(weekId, dto, userId, role);
+  }
+
+  @Put(':id')
+  @Roles(Role.ADMIN, Role.DOSEN)
+  @ApiOperation({ summary: 'Update an activity (Admin/Dosen only)' })
+  @ApiParam({ name: 'weekId', description: 'Week ID' })
+  @ApiParam({ name: 'id', description: 'Activity ID' })
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateActivityDto,
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    return this.activitiesService.update(id, dto, userId, role);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN, Role.DOSEN)
+  @ApiOperation({ summary: 'Delete an activity (Admin/Dosen only)' })
+  @ApiParam({ name: 'weekId', description: 'Week ID' })
+  @ApiParam({ name: 'id', description: 'Activity ID' })
+  remove(
+    @Param('id') id: string,
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    return this.activitiesService.remove(id, userId, role);
+  }
+
+  @Post(':id/duplicate')
+  @Roles(Role.ADMIN, Role.DOSEN)
+  @ApiOperation({ summary: 'Duplicate an activity (Admin/Dosen only)' })
+  @ApiParam({ name: 'weekId', description: 'Week ID' })
+  @ApiParam({ name: 'id', description: 'Activity ID' })
+  duplicate(
+    @Param('id') id: string,
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    return this.activitiesService.duplicate(id, userId, role);
+  }
+
+  @Post(':id/move')
+  @Roles(Role.ADMIN, Role.DOSEN)
+  @ApiOperation({ summary: 'Move an activity to another week (Admin/Dosen only)' })
+  @ApiParam({ name: 'weekId', description: 'Week ID' })
+  @ApiParam({ name: 'id', description: 'Activity ID' })
+  move(
+    @Param('id') id: string,
+    @Body() body: { newWeekId: string },
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    return this.activitiesService.move(id, body.newWeekId, userId, role);
+  }
+
+  @Post('reorder')
+  @Roles(Role.ADMIN, Role.DOSEN)
+  @ApiOperation({ summary: 'Reorder activities (Admin/Dosen only)' })
+  @ApiParam({ name: 'weekId', description: 'Week ID' })
+  reorder(
+    @Param('weekId') weekId: string,
+    @Body() body: { activityOrders: { id: string; order: number }[] },
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
+    return this.activitiesService.reorder(weekId, body.activityOrders, userId, role);
+  }
+}
